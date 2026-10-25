@@ -162,13 +162,13 @@ function patchFileName(change: PatchChange, patch?: PatchInfo): string {
 function commitMessage(change: PatchChange): string {
 	let text: string;
 	if (!change.after) {
-		text = `delete \`${patchFileName(change, change.before)}\``;
+		text = `delete ${patchFileName(change, change.before)}`;
 	} else if (!change.before) {
-		text = `add \`${patchFileName(change, change.after)}\``;
+		text = `add ${patchFileName(change, change.after)}`;
 	} else if (change.before.file !== change.after.file) {
-		text = `rename \`${patchFileName(change, change.before)}\` to \`${patchFileName(change, change.after)}\``;
+		text = `rename ${patchFileName(change, change.before)} to ${patchFileName(change, change.after)}`;
 	} else {
-		text = `update \`${patchFileName(change, change.after)}\``;
+		text = `update ${patchFileName(change, change.after)}`;
 	}
 	return `${change.model}: ${text} (${change.id})`;
 }

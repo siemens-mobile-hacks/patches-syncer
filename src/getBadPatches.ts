@@ -5,7 +5,7 @@ import { globSync } from 'glob';
 import { vkpParse, vkpDetectContent, vkpNormalize, vkpNormalizeWithRTF } from '@sie-js/vkp';
 import { readFiles } from "./utils.js";
 
-const PATCHES_DIR = path.resolve(`${import.meta.dirname}/../patches`);
+const PATCHES_DIR = path.resolve('patches');
 
 interface PatchInfo {
 	id: number;

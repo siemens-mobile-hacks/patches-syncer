@@ -2,12 +2,13 @@
 set -e
 set -x
 
-cd "$(dirname "$0")/../"
+SYNCER="$(cd "$(dirname "$0")/.." && pwd)"
+TSX="$SYNCER/node_modules/.bin/tsx"
 
 # Run update
-pnpm install --frozen-lockfile
-npx tsx src/syncPatches.ts --cookie="$KIBAB_TEST_USER" "$@"
-npx tsx src/getBadPatches.ts > bad.md
+pnpm --dir "$SYNCER" install --frozen-lockfile
+"$TSX" "$SYNCER/src/syncPatches.ts" --cookie="$KIBAB_TEST_USER" "$@"
+"$TSX" "$SYNCER/src/getBadPatches.ts" > bad.md
 
 # Commit
 git config --local core.hooksPath /notexistent
@@ -19,7 +20,7 @@ git diff --exit-code patches bad.md || {
 	git stash
 	git pull
 	git stash pop
-	npx tsx src/commitPatches.ts
+	"$TSX" "$SYNCER/src/commitPatches.ts"
 	git push
 }
 

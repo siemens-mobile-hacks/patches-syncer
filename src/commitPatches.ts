@@ -1,7 +1,7 @@
 import { spawnSync } from 'node:child_process';
 import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { basename, join, resolve } from 'node:path';
+import { basename, join } from 'node:path';
 import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
 import { buildFilesList, type IndexData, type PatchInfo } from './utils.js';
@@ -29,7 +29,7 @@ const argv = await yargs(hideBin(process.argv))
 	})
 	.parse();
 
-const ROOT = resolve(`${import.meta.dirname}/..`);
+const ROOT = process.cwd();
 const TEMP_DIR = mkdtempSync(join(tmpdir(), 'commit-patches-'));
 const TEMP_INDEX = join(TEMP_DIR, 'index');
 

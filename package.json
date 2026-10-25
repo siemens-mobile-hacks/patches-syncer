@@ -1,5 +1,5 @@
 {
-	"name": "patches-git-mirror",
+	"name": "patches-syncer",
 	"version": "1.0.0",
 	"description": "",
 	"type": "module",

@@ -48,7 +48,7 @@ const argv = await yargs(hideBin(process.argv))
 	.option('output', {
 		type: 'string',
 		description: 'Output dir.',
-		default: path.resolve(`${import.meta.dirname}/../patches/`)
+		default: path.resolve('patches')
 	})
 	.parse();
 

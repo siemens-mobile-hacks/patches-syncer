@@ -19,8 +19,7 @@ git diff --exit-code patches bad.md || {
 	git stash
 	git pull
 	git stash pop
-	git add patches bad.md
-	git commit -m "sync"
+	npx tsx src/commitPatches.ts
 	git push
 }
 

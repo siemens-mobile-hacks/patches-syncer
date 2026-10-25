@@ -1,40 +1,19 @@
 {
 	"compilerOptions": {
-		"forceConsistentCasingInFileNames": true,
-		"allowSyntheticDefaultImports": true,
-		"esModuleInterop": true,
-		"isolatedModules": true,
-		"jsx": "preserve",
-		"jsxImportSource": "solid-js",
-		"lib": [
-			"ES2020",
-			"DOM",
-			"DOM.Iterable"
-		],
-		"module": "ESNext",
-		"moduleResolution": "bundler",
+		"module": "NodeNext",
+		"moduleResolution": "NodeNext",
+		"target": "ESNext",
+		"lib": ["ESNext"],
+		"types": ["node"],
 		"noEmit": true,
-		"noFallthroughCasesInSwitch": true,
+		"strict": true,
 		"noUnusedLocals": true,
 		"noUnusedParameters": true,
-		"paths": {
-			"@/*": [
-				"./src/*"
-			]
-		},
-		"resolveJsonModule": true,
-		"skipLibCheck": true,
-		"strict": true,
-		"target": "ESNext",
-		"types": [
-			"vite-plugin-solid-svg/types-component-solid",
-			"vite/client"
-		]
+		"noFallthroughCasesInSwitch": true,
+		"moduleDetection": "force",
+		"esModuleInterop": true,
+		"forceConsistentCasingInFileNames": true,
+		"skipLibCheck": true
 	},
-	"include": [
-		"src"
-	],
-	"references": [{
-		"path": "./tsconfig.node.json"
-	}]
+	"include": ["src"]
 }

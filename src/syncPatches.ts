@@ -7,27 +7,9 @@ import { hideBin } from 'yargs/helpers';
 import { globSync } from 'glob';
 import child_process from 'child_process';
 import { KibabAPI } from './KibabAPI.js';
-import { fileMD5, findZipStart, getChunks, readFiles, wget } from "./utils.js";
+import { buildFilesList, fileMD5, findZipStart, getChunks, readFiles, wget, type IndexData, type PatchInfo } from './utils.js';
 
 // Define interfaces for the data structures
-interface PatchInfo {
-	id: number;
-	model: string;
-	file: string;
-	additionalFile?: string;
-	mtime: number;
-	title: {
-		ru: string;
-		en: string;
-	};
-}
-
-interface IndexData {
-	[model: string]: {
-		[patchId: number]: PatchInfo;
-	};
-}
-
 interface ZipPatchInfo {
 	fileName: string;
 	time: number;
@@ -159,17 +141,7 @@ async function syncPatches(api: KibabAPI): Promise<void> {
 }
 
 function generateFilesList(): void {
-	const indexData: IndexData = loadIndex();
-	const indexList: { [id: number]: string[] } = [];
-	for (const model in indexData) {
-		for (const patch of Object.values(indexData[model])) {
-			indexList[patch.id] = [];
-			indexList[patch.id].push(patch.file);
-			if (patch.additionalFile)
-				indexList[patch.id].push(patch.additionalFile);
-		}
-	}
-	fs.writeFileSync(`${OUT_DIR}/files.json`, JSON.stringify(indexList, null, '\t'));
+	fs.writeFileSync(`${OUT_DIR}/files.json`, JSON.stringify(buildFilesList(loadIndex()), null, '\t'));
 }
 
 function garbageCollector(): void {

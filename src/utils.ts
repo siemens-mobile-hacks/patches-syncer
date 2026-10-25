@@ -1,6 +1,24 @@
 import fs from "node:fs";
 import crypto from "node:crypto";
 
+export interface PatchInfo {
+	id: number;
+	model: string;
+	file: string;
+	additionalFile?: string;
+	mtime: number;
+	title: {
+		ru: string;
+		en: string;
+	};
+}
+
+export interface IndexData {
+	[model: string]: {
+		[patchId: number]: PatchInfo;
+	};
+}
+
 interface WgetResponse {
 	status: number;
 	body: Buffer;
@@ -49,4 +67,17 @@ export function readFiles(dir: string, base: string = "", files: string[] = []):
 		}
 	});
 	return files;
+}
+
+export function buildFilesList(indexData: IndexData): string[][] {
+	const indexList: string[][] = [];
+	for (const model in indexData) {
+		for (const patch of Object.values(indexData[model])) {
+			indexList[patch.id] = [];
+			indexList[patch.id].push(patch.file);
+			if (patch.additionalFile)
+				indexList[patch.id].push(patch.additionalFile);
+		}
+	}
+	return indexList;
 }

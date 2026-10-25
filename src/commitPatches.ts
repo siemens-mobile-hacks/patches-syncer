@@ -19,6 +19,7 @@ const INDEX_PATH = 'patches/index.json';
 const FILES_PATH = 'patches/files.json';
 const BAD_PATH = 'bad.md';
 const PATCH_FILE = /^patches\/([^/]+)\/([0-9]+)-[^/]+$/;
+const MASS_CHANGE_LIMIT = 100;
 
 const argv = await yargs(hideBin(process.argv))
 	.option('dry-run', {
@@ -50,8 +51,13 @@ function commitPatches(): void {
 	const changes = collectChanges(changedPaths, oldIndex, JSON.parse(newIndexText));
 	const badChanged = changedPaths.includes(BAD_PATH);
 
-	for (const change of changes)
-		console.log(`${new Date(change.date * 1000).toISOString()} ${commitMessage(change)}`);
+	const massChange = changes.length > MASS_CHANGE_LIMIT;
+	if (massChange) {
+		console.log(massChangeMessage(changes));
+	} else {
+		for (const change of changes)
+			console.log(`${new Date(change.date * 1000).toISOString()} ${commitMessage(change)}`);
+	}
 	if (badChanged)
 		console.log('Update bad patches list');
 
@@ -59,6 +65,28 @@ function commitPatches(): void {
 		return;
 
 	git(['read-tree', head], true);
+	let parent: string;
+	if (massChange) {
+		git(['add', '-A', '--', 'patches'], true);
+		parent = commitTree(head, massChangeMessage(changes), Math.floor(Date.now() / 1000));
+	} else {
+		parent = commitEach(head, changes, oldIndex, newIndexText, newFilesText);
+	}
+
+	if (badChanged) {
+		git(['add', '-A', '--', BAD_PATH], true);
+		parent = commitTree(parent, 'Update bad patches list', Math.floor(Date.now() / 1000));
+	}
+
+	git(['update-ref', '-m', 'commit patches', 'HEAD', parent, head]);
+	git(['reset', '-q']);
+
+	const dirty = git(['status', '--porcelain', '--', 'patches', BAD_PATH]).trim();
+	if (dirty)
+		throw new Error(`Not all changes were committed:\n${dirty}`);
+}
+
+function commitEach(head: string, changes: PatchChange[], oldIndex: IndexData, newIndexText: string, newFilesText: string): string {
 	const currentIndex: IndexData = structuredClone(oldIndex);
 	let lastIndexText = JSON.stringify(currentIndex, null, '\t');
 	let parent = head;
@@ -85,18 +113,7 @@ function commitPatches(): void {
 		}
 		parent = commitTree(parent, commitMessage(change), change.date);
 	}
-
-	if (badChanged) {
-		git(['add', '-A', '--', BAD_PATH], true);
-		parent = commitTree(parent, 'Update bad patches list', Math.floor(Date.now() / 1000));
-	}
-
-	git(['update-ref', '-m', 'commit patches', 'HEAD', parent, head]);
-	git(['reset', '-q']);
-
-	const dirty = git(['status', '--porcelain', '--', 'patches', BAD_PATH]).trim();
-	if (dirty)
-		throw new Error(`Not all changes were committed:\n${dirty}`);
+	return parent;
 }
 
 function collectChanges(changedPaths: string[], oldIndex: IndexData, newIndex: IndexData): PatchChange[] {
@@ -154,6 +171,10 @@ function commitMessage(change: PatchChange): string {
 		text = `update \`${patchFileName(change, change.after)}\``;
 	}
 	return `${change.model}: ${text} (${change.id})`;
+}
+
+function massChangeMessage(changes: PatchChange[]): string {
+	return `Update ${changes.length} patches`;
 }
 
 function stageText(file: string, text: string): void {

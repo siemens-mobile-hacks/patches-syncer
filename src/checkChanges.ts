@@ -58,15 +58,17 @@ const recentDay = moscowTime(Date.now() - 24 * 3600 * 1000).slice(0, 10);
 const models = await api.getAllModels();
 for (const [i, model] of models.entries()) {
 	const patches = await api.getAllPatches(model.modelId, model.swId);
-	console.log(`[${i + 1}/${models.length}] ${model.name}: ${patches.length} patches`);
+	let modelChanged = 0;
 	for (const patch of patches) {
 		seen.add(patch.id);
 		const old = known.get(patch.id);
 		if (!old || await isUpdated(patch, old)) {
 			console.log(`${model.name}: ${old ? 'updated' : 'added'} ${patch.id}`);
 			changed.push(patch.id);
+			modelChanged++;
 		}
 	}
+	console.log(`[${i + 1}/${models.length}] ${model.name}: ${patches.length} patches, ${modelChanged} changed`);
 }
 
 for (const [id, patch] of known) {
@@ -108,7 +110,6 @@ async function isUpdated(patch: KibabPatch, old: PatchInfo): Promise<boolean> {
 	if (patch.updated < recentDay)
 		return false;
 	const updateTime = await api.getPatchUpdateTime(patch.id);
-	console.log(`  ${patch.id}: index ${oldTime}, kibab ${updateTime ?? 'never updated'}`);
 	return updateTime !== undefined && updateTime > oldTime;
 }
 

@@ -10,6 +10,12 @@ Run from the patches repository directory:
 KIBAB_TEST_USER=login:password_hash ../patches-syncer/tools/ci.sh
 ```
 
+Check the site and trigger the sync workflow if something changed:
+
+```shell
+GITHUB_TOKEN=token pnpm check-changes
+```
+
 # AI-assisted contributions
 
 We are not against AI. We are against vibe coding, AI slop, and attempts to offload engineering work to a model. This project prioritizes quality, not development speed or results at any cost.

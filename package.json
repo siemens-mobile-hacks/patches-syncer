@@ -7,7 +7,8 @@
 		"test": "echo \"Error: no test specified\" && exit 1",
 		"sync-patches": "tsx src/syncPatches.ts",
 		"get-bad-patches": "tsx src/getBadPatches.ts",
-		"commit-patches": "tsx src/commitPatches.ts"
+		"commit-patches": "tsx src/commitPatches.ts",
+		"check-changes": "tsx src/checkChanges.ts"
 	},
 	"author": "",
 	"license": "MIT",

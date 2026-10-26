@@ -7,6 +7,7 @@ const KIBAB_URL = 'https://patches.kibab.com';
 export interface KibabPatch {
 	id: number;
 	title: string;
+	updated: string;
 }
 
 export interface KibabDeletedPatch {
@@ -111,9 +112,14 @@ export class KibabAPI {
 			if (!id)
 				throw new Error(`Invalid patch link: ${linkUrl}`);
 
+            const updated = $(p).closest('tr').find('td').eq(4).text().trim().split('.').reverse().join('-');
+            if (!updated.match(/^\d{4}-\d\d-\d\d$/))
+                throw new Error(`Invalid patch date: ${id}`);
+
             patches.push({
-                id:     +id,
-                title:  linkTitle.trim(),
+                id:         +id,
+                title:      linkTitle.trim(),
+                updated:    updated,
             });
         }
 

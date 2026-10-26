@@ -13,7 +13,14 @@ KIBAB_TEST_USER=login:password_hash ../patches-syncer/tools/ci.sh
 Check the site and trigger the sync workflow if something changed:
 
 ```shell
-GITHUB_TOKEN=token pnpm check-changes --cookie=login:password_hash
+pnpm check-changes
+```
+
+`.env`:
+
+```
+GITHUB_TOKEN=token
+KIBAB_COOKIE=login:password_hash
 ```
 
 # AI-assisted contributions

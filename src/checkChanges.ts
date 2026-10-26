@@ -6,11 +6,15 @@ import { hideBin } from 'yargs/helpers';
 import { KibabAPI } from './KibabAPI.js';
 import type { IndexData, PatchInfo } from './utils.js';
 
+const ENV_FILE = `${import.meta.dirname}/../.env`;
+if (existsSync(ENV_FILE))
+	process.loadEnvFile(ENV_FILE);
+
 const argv = await yargs(hideBin(process.argv))
 	.option('cookie', {
 		type: 'string',
 		description: 'Kibab cookie: login:password_hash',
-		demandOption: true
+		default: process.env.KIBAB_COOKIE
 	})
 	.option('repo', {
 		type: 'string',
@@ -33,6 +37,11 @@ const argv = await yargs(hideBin(process.argv))
 		default: false
 	})
 	.parse();
+
+if (!argv.cookie) {
+	console.error('--cookie or KIBAB_COOKIE is not set!');
+	process.exit(1);
+}
 
 const token = process.env.GITHUB_TOKEN;
 if (!token && !argv['dry-run']) {

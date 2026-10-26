@@ -6,7 +6,7 @@ SYNCER="$(cd "$(dirname "$0")/.." && pwd)"
 TSX="$SYNCER/node_modules/.bin/tsx"
 
 # Run update
-pnpm --dir "$SYNCER" install --frozen-lockfile
+(cd "$SYNCER" && pnpm install --frozen-lockfile)
 "$TSX" "$SYNCER/src/syncPatches.ts" --cookie="$KIBAB_TEST_USER" "$@"
 "$TSX" "$SYNCER/src/getBadPatches.ts" > bad.md
 

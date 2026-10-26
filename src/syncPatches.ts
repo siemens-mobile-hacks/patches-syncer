@@ -2,8 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import yauzl from 'yauzl';
 import iconv from 'iconv-lite';
-import yargs from 'yargs';
-import { hideBin } from 'yargs/helpers';
+import { program } from '@commander-js/extra-typings';
 import { globSync } from 'glob';
 import child_process from 'child_process';
 import { KibabAPI } from './KibabAPI.js';
@@ -24,33 +23,14 @@ interface BadPatch {
 // patches.kibab.com timezone
 process.env.TZ = 'Europe/Moscow'; // thanks Viktor89
 
-const argv = await yargs(hideBin(process.argv))
-	.option('cookie', {
-		type: 'string',
-		description: 'Kibab cookie: login:password_hash',
-		default: ""
-	})
-	.option('full-sync', {
-		type: 'boolean',
-		description: 'Run full sync (~3h).',
-		default: false
-	})
-	.option('from-model', {
-		type: 'string',
-		description: 'Run sync starting from specified model.',
-		default: false
-	})
-	.option('patches', {
-		type: 'string',
-		description: 'Patches IDs for partial sync.',
-		default: undefined
-	})
-	.option('output', {
-		type: 'string',
-		description: 'Output dir.',
-		default: path.resolve('patches')
-	})
-	.parse();
+const argv = program
+	.option('--cookie <cookie>', 'Kibab cookie: login:password_hash', '')
+	.option('--full-sync', 'Run full sync (~3h).', false)
+	.option('--from-model <model>', 'Run sync starting from specified model.')
+	.option('--patches <ids>', 'Patches IDs for partial sync.')
+	.option('--output <dir>', 'Output dir.', path.resolve('patches'))
+	.parse()
+	.opts();
 
 const OUT_DIR = argv.output;
 if (!fs.existsSync(OUT_DIR)) {
@@ -112,14 +92,14 @@ async function removeDeletedPatches(api: KibabAPI): Promise<void> {
 }
 
 async function syncPatches(api: KibabAPI): Promise<void> {
-	if (argv["full-sync"]) {
+	if (argv.fullSync) {
 		console.log("-------------------------------------------------");
 		console.log(`Full sync mode!!!`);
 		console.log("-------------------------------------------------");
 	}
 
-	if (argv["patches"]) {
-		const patchesToSync = argv["patches"].split(/\s*,\s*/).map((v) => parseInt(v));
+	if (argv.patches) {
+		const patchesToSync = argv.patches.split(/\s*,\s*/).map((v) => parseInt(v));
 		await downloadPatches(api, patchesToSync, true);
 		return;
 	}
@@ -130,13 +110,13 @@ async function syncPatches(api: KibabAPI): Promise<void> {
 		console.log(`[${model.name}]`);
 		fs.mkdirSync(`${OUT_DIR}/${model.name}`, { recursive: true });
 
-		if (argv["from-model"] && model.name != argv["from-model"] && !flag)
+		if (argv.fromModel && model.name != argv.fromModel && !flag)
 			continue;
 		flag = true;
 
 		const allModelPatches = await api.getAllPatches(model.modelId, model.swId);
 		const allModelPatchesIds = allModelPatches.map((p) => p.id);
-		await downloadPatches(api, allModelPatchesIds, argv["full-sync"]);
+		await downloadPatches(api, allModelPatchesIds, argv.fullSync);
 	}
 }
 

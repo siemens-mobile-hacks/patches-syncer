@@ -2,8 +2,7 @@ import { spawnSync } from 'node:child_process';
 import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { basename, join } from 'node:path';
-import yargs from 'yargs';
-import { hideBin } from 'yargs/helpers';
+import { program } from '@commander-js/extra-typings';
 import { buildFilesList, type IndexData, type PatchInfo } from './utils.js';
 
 interface PatchChange {
@@ -21,13 +20,10 @@ const BAD_PATH = 'bad.md';
 const PATCH_FILE = /^patches\/([^/]+)\/([0-9]+)-[^/]+$/;
 const MASS_CHANGE_LIMIT = 100;
 
-const argv = await yargs(hideBin(process.argv))
-	.option('dry-run', {
-		type: 'boolean',
-		description: 'Only print commits which would be created.',
-		default: false
-	})
-	.parse();
+const argv = program
+	.option('--dry-run', 'Only print commits which would be created.', false)
+	.parse()
+	.opts();
 
 const ROOT = process.cwd();
 const TEMP_DIR = mkdtempSync(join(tmpdir(), 'commit-patches-'));
@@ -61,7 +57,7 @@ function commitPatches(): void {
 	if (badChanged)
 		console.log('Update bad patches list');
 
-	if (argv['dry-run'] || (changes.length === 0 && !badChanged))
+	if (argv.dryRun || (changes.length === 0 && !badChanged))
 		return;
 
 	git(['read-tree', head], true);

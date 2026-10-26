@@ -1,6 +1,5 @@
 import { existsSync } from 'node:fs';
-import yargs from 'yargs';
-import { hideBin } from 'yargs/helpers';
+import { program } from '@commander-js/extra-typings';
 import { Socks5ProxyAgent, setGlobalDispatcher } from 'undici';
 import { KibabAPI, type KibabPatch } from './KibabAPI.js';
 import type { IndexData, PatchInfo } from './utils.js';
@@ -9,27 +8,13 @@ const ENV_FILE = `${import.meta.dirname}/../.env`;
 if (existsSync(ENV_FILE))
 	process.loadEnvFile(ENV_FILE);
 
-const argv = await yargs(hideBin(process.argv))
-	.option('repo', {
-		type: 'string',
-		description: 'Patches repository.',
-		default: 'siemens-mobile-hacks/patches'
-	})
-	.option('workflow', {
-		type: 'string',
-		description: 'Sync workflow.',
-		default: 'sync-patches.yml'
-	})
-	.option('proxy', {
-		type: 'string',
-		description: 'SOCKS5 proxy: socks5://[user:password@]host:port',
-	})
-	.option('dry-run', {
-		type: 'boolean',
-		description: 'Only print changes.',
-		default: false
-	})
-	.parse();
+const argv = program
+	.option('--repo <repo>', 'Patches repository.', 'siemens-mobile-hacks/patches')
+	.option('--workflow <file>', 'Sync workflow.', 'sync-patches.yml')
+	.option('--proxy <url>', 'SOCKS5 proxy: socks5://[user:password@]host:port')
+	.option('--dry-run', 'Only print changes.', false)
+	.parse()
+	.opts();
 
 const cookie = process.env.KIBAB_COOKIE;
 if (!cookie) {
@@ -38,7 +23,7 @@ if (!cookie) {
 }
 
 const token = process.env.GITHUB_TOKEN;
-if (!token && !argv['dry-run']) {
+if (!token && !argv.dryRun) {
 	console.error('GITHUB_TOKEN is not set!');
 	process.exit(1);
 }
@@ -80,7 +65,7 @@ for (const [id, patch] of known) {
 
 if (changed.length === 0 && deleted.length === 0) {
 	console.log('No changes.');
-} else if (argv['dry-run']) {
+} else if (argv.dryRun) {
 	// Only print changes.
 } else if (await isSyncRunning()) {
 	console.log(`${argv.workflow} is not finished yet, skipping.`);

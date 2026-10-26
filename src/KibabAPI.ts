@@ -126,6 +126,15 @@ export class KibabAPI {
         return patches;
     }
 
+    // Returns 'YYYY-MM-DD HH:MM' (Moscow time) or undefined if the patch was never updated.
+    async getPatchUpdateTime(id: number): Promise<string | undefined> {
+        const html: string = await this.apiRequest(`/patches/details.php5?id=${id}`);
+        if (!html.includes('Добавлен в базу'))
+            throw new Error(`Invalid patch details: ${id}`);
+        const m = html.match(/Обновлён\s+(\d\d)\.(\d\d)\.(\d{4})\s+(\d\d:\d\d)/);
+        return m ? `${m[3]}-${m[2]}-${m[1]} ${m[4]}` : undefined;
+    }
+
     async addToCart(patchesIds: number[]): Promise<number[]> {
         const form = new URLSearchParams();
         form.append('action', 'add_multiple');

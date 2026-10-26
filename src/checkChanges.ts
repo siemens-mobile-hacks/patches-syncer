@@ -1,10 +1,8 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { homedir } from 'node:os';
-import { dirname } from 'node:path';
+import { existsSync } from 'node:fs';
 import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
 import { Socks5ProxyAgent, setGlobalDispatcher } from 'undici';
-import { KibabAPI } from './KibabAPI.js';
+import { KibabAPI, type KibabPatch } from './KibabAPI.js';
 import type { IndexData, PatchInfo } from './utils.js';
 
 const ENV_FILE = `${import.meta.dirname}/../.env`;
@@ -21,11 +19,6 @@ const argv = await yargs(hideBin(process.argv))
 		type: 'string',
 		description: 'Sync workflow.',
 		default: 'sync-patches.yml'
-	})
-	.option('state', {
-		type: 'string',
-		description: 'File with the last triggered changes.',
-		default: `${homedir()}/.cache/patches-syncer/changes.json`
 	})
 	.option('proxy', {
 		type: 'string',
@@ -60,11 +53,16 @@ const seen = new Set<number>();
 
 const [login, password] = cookie.split(':');
 const api = new KibabAPI(login, password);
-for (const model of await api.getAllModels()) {
-	for (const patch of await api.getAllPatches(model.modelId, model.swId)) {
+// Same-day updates are checked only for recent patches, the script is expected to run at least daily.
+const recentDay = moscowTime(Date.now() - 24 * 3600 * 1000).slice(0, 10);
+const models = await api.getAllModels();
+for (const [i, model] of models.entries()) {
+	const patches = await api.getAllPatches(model.modelId, model.swId);
+	console.log(`[${i + 1}/${models.length}] ${model.name}: ${patches.length} patches`);
+	for (const patch of patches) {
 		seen.add(patch.id);
 		const old = known.get(patch.id);
-		if (!old || patch.updated > moscowDay(old.mtime)) {
+		if (!old || await isUpdated(patch, old)) {
 			console.log(`${model.name}: ${old ? 'updated' : 'added'} ${patch.id}`);
 			changed.push(patch.id);
 		}
@@ -78,21 +76,15 @@ for (const [id, patch] of known) {
 	}
 }
 
-const state = JSON.stringify({ changed: changed.sort((a, b) => a - b), deleted: deleted.sort((a, b) => a - b) });
-const lastState = existsSync(argv.state) ? readFileSync(argv.state, 'utf-8') : undefined;
-
 if (changed.length === 0 && deleted.length === 0) {
 	console.log('No changes.');
-} else if (state === lastState) {
-	console.log('Sync was already triggered for these changes.');
-} else if (!argv['dry-run']) {
+} else if (argv['dry-run']) {
+	// Only print changes.
+} else if (await isSyncRunning()) {
+	console.log(`${argv.workflow} is not finished yet, skipping.`);
+} else {
 	await triggerSync(changed);
 	console.log(`Triggered ${argv.workflow}.`);
-}
-
-if (!argv['dry-run']) {
-	mkdirSync(dirname(argv.state), { recursive: true });
-	writeFileSync(argv.state, state);
 }
 
 async function loadIndex(): Promise<Map<number, PatchInfo>> {
@@ -108,8 +100,35 @@ async function loadIndex(): Promise<Map<number, PatchInfo>> {
 	return patches;
 }
 
-function moscowDay(time: number): string {
-	return new Date(time).toLocaleDateString('sv-SE', { timeZone: 'Europe/Moscow' });
+// The patch list has only the update date, so for a recent same-day update check the exact time.
+async function isUpdated(patch: KibabPatch, old: PatchInfo): Promise<boolean> {
+	const oldTime = moscowTime(old.mtime);
+	if (patch.updated !== oldTime.slice(0, 10))
+		return patch.updated > oldTime;
+	if (patch.updated < recentDay)
+		return false;
+	const updateTime = await api.getPatchUpdateTime(patch.id);
+	console.log(`  ${patch.id}: index ${oldTime}, kibab ${updateTime ?? 'never updated'}`);
+	return updateTime !== undefined && updateTime > oldTime;
+}
+
+// Returns 'YYYY-MM-DD HH:MM' in Moscow time.
+function moscowTime(time: number): string {
+	return new Date(time).toLocaleString('sv-SE', { timeZone: 'Europe/Moscow' }).slice(0, 16);
+}
+
+async function isSyncRunning(): Promise<boolean> {
+	const url = `https://api.github.com/repos/${argv.repo}/actions/workflows/${argv.workflow}/runs?per_page=20`;
+	const response = await fetch(url, {
+		headers: {
+			'Accept': 'application/vnd.github+json',
+			'Authorization': `Bearer ${token}`,
+		},
+	});
+	if (!response.ok)
+		throw new Error(`Can't get workflow runs: HTTP ${response.status} ${await response.text()}`);
+	const { workflow_runs: runs } = await response.json() as { workflow_runs: { status: string }[] };
+	return runs.some((run) => run.status !== 'completed');
 }
 
 async function triggerSync(patches: number[]): Promise<void> {

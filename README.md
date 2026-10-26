@@ -2,38 +2,13 @@
 
 Synchronizer for [siemens-mobile-hacks/patches](https://github.com/siemens-mobile-hacks/patches), the git mirror of [https://patches.kibab.com](https://patches.kibab.com).
 
-It downloads patches from the site, checks them for common problems and commits every patch change as a separate commit.
-
 # Usage
 
-All commands run in the directory of the patches repository.
+Run from the patches repository directory:
 
 ```shell
-git clone https://github.com/siemens-mobile-hacks/patches
-git clone https://github.com/siemens-mobile-hacks/patches-syncer
-cd patches-syncer && pnpm install && cd ../patches
-
-TSX=../patches-syncer/node_modules/.bin/tsx
-$TSX ../patches-syncer/src/syncPatches.ts --cookie=login:password_hash  # download changed patches
-$TSX ../patches-syncer/src/getBadPatches.ts > bad.md                    # update bad patches list
-$TSX ../patches-syncer/src/commitPatches.ts --dry-run                   # show commits which would be created
-$TSX ../patches-syncer/src/commitPatches.ts                             # commit changes
+KIBAB_TEST_USER=login:password_hash ../patches-syncer/tools/ci.sh
 ```
-
-`syncPatches.ts` options:
-
-| Option                 | Description                         |
-|------------------------|-------------------------------------|
-| `--cookie`             | Kibab cookie: `login:password_hash` |
-| `--full-sync`          | Run full sync (~3h)                 |
-| `--from-model <model>` | Run sync starting from the model    |
-| `--patches <ids>`      | Patches IDs for partial sync        |
-
-`commitPatches.ts` creates one commit per changed patch, dated by the patch mtime. If more than 100 patches changed at once, it creates one commit for all of them. Changes in `bad.md` are committed separately.
-
-# CI
-
-The sync workflow lives in the patches repository and runs [tools/ci.sh](tools/ci.sh) from the patches directory every day.
 
 # AI-assisted contributions
 

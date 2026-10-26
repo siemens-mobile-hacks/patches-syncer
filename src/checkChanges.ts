@@ -7,6 +7,11 @@ import { KibabAPI } from './KibabAPI.js';
 import type { IndexData, PatchInfo } from './utils.js';
 
 const argv = await yargs(hideBin(process.argv))
+	.option('cookie', {
+		type: 'string',
+		description: 'Kibab cookie: login:password_hash',
+		demandOption: true
+	})
 	.option('repo', {
 		type: 'string',
 		description: 'Patches repository.',
@@ -40,7 +45,8 @@ const changed: number[] = [];
 const deleted: number[] = [];
 const seen = new Set<number>();
 
-const api = new KibabAPI('', '');
+const [login, password] = argv.cookie.split(':');
+const api = new KibabAPI(login, password);
 for (const model of await api.getAllModels()) {
 	for (const patch of await api.getAllPatches(model.modelId, model.swId)) {
 		seen.add(patch.id);

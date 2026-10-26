@@ -3,6 +3,7 @@ import { homedir } from 'node:os';
 import { dirname } from 'node:path';
 import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
+import { Socks5ProxyAgent, setGlobalDispatcher } from 'undici';
 import { KibabAPI } from './KibabAPI.js';
 import type { IndexData, PatchInfo } from './utils.js';
 
@@ -11,11 +12,6 @@ if (existsSync(ENV_FILE))
 	process.loadEnvFile(ENV_FILE);
 
 const argv = await yargs(hideBin(process.argv))
-	.option('cookie', {
-		type: 'string',
-		description: 'Kibab cookie: login:password_hash',
-		default: process.env.KIBAB_COOKIE
-	})
 	.option('repo', {
 		type: 'string',
 		description: 'Patches repository.',
@@ -31,6 +27,10 @@ const argv = await yargs(hideBin(process.argv))
 		description: 'File with the last triggered changes.',
 		default: `${homedir()}/.cache/patches-syncer/changes.json`
 	})
+	.option('proxy', {
+		type: 'string',
+		description: 'SOCKS5 proxy: socks5://[user:password@]host:port',
+	})
 	.option('dry-run', {
 		type: 'boolean',
 		description: 'Only print changes.',
@@ -38,8 +38,9 @@ const argv = await yargs(hideBin(process.argv))
 	})
 	.parse();
 
-if (!argv.cookie) {
-	console.error('--cookie or KIBAB_COOKIE is not set!');
+const cookie = process.env.KIBAB_COOKIE;
+if (!cookie) {
+	console.error('KIBAB_COOKIE is not set!');
 	process.exit(1);
 }
 
@@ -49,12 +50,15 @@ if (!token && !argv['dry-run']) {
 	process.exit(1);
 }
 
+if (argv.proxy)
+	setGlobalDispatcher(new Socks5ProxyAgent(argv.proxy));
+
 const known = await loadIndex();
 const changed: number[] = [];
 const deleted: number[] = [];
 const seen = new Set<number>();
 
-const [login, password] = argv.cookie.split(':');
+const [login, password] = cookie.split(':');
 const api = new KibabAPI(login, password);
 for (const model of await api.getAllModels()) {
 	for (const patch of await api.getAllPatches(model.modelId, model.swId)) {

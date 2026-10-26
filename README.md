@@ -14,6 +14,7 @@ Check the site and trigger the sync workflow if something changed:
 
 ```shell
 pnpm check-changes
+pnpm check-changes --proxy socks5://user:password@host:port
 ```
 
 `.env`:
